@@ -1,0 +1,45 @@
+/*the county layer draw all county boudaries and labels the county names*/
+#county {
+ [zoom>4][zoom<7]{
+  line-color:@darkchrome;
+  line-opacity:0.15;
+  line-width:0.85;
+    }
+}
+
+#county {
+ [zoom>6][zoom<9]{
+  line-color:@darkchrome;
+  line-opacity:0.15;
+  line-width:1.75;
+    }
+  [zoom>8]{
+  line-color:@darkchrome;
+  line-opacity:0.15;
+  line-width:2.75;
+  }
+  [zoom>7]{
+  text-name:"[cty_name]";
+  text-face-name:@sans-bold;
+  text-size:9;
+  text-fill:fadeout(@state-name, 55%);
+  text-halo-radius:3;
+  }
+}
+
+/*the nearshore layer is water and on top to cover 'land' and get a 
+  nice coast line*/
+#nearshore {
+  [zoom>7] {
+  polygon-fill:@water; 
+  }
+}
+
+/*the state high res layer comes on above zoom scale 7 so the block, county
+  and state layers are all coincident*/
+#state_high_res {
+  [zoom>7]{
+    line-color: fadeout(#222c31, 45%); 
+    line-width:2.0;
+    }
+ }
