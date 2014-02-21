@@ -1,0 +1,3967 @@
+--create_cost_poly
+--mike byrne
+--edited by john emmett
+--january 6, 2014
+--create the cost landscape polygons
+--with 7 categories of cost
+--has st_transform and st_simplify in it
+--code structure for myvalue
+--1 - un-populated
+--2 - cost less than the benchmark-served(price cap)
+--3 - cost less than the benchmark-unserved(price cap)
+--4 - cost between the benchmark-served (price cap)
+--5 - cost between the benchmark-unserved (price cap)
+--6 - cost greater than the benchmark-served (price cap)
+--7 - cost greater than the benchmark-unserved (price cap)
+--8 - rate of return
+--9 - water
+
+drop table if exists cost2013.cost52su_poly;
+create table cost2013.cost52su_poly
+(
+  geom geometry,
+  state_fips character varying(2),
+  myvalue character varying(2),
+  gid serial not null,
+  CONSTRAINT cost2013_cost52su_poly_pkey PRIMARY KEY (gid),
+  CONSTRAINT enforce_dims_geom CHECK (st_ndims(geom) = 2)
+)
+WITH (
+  OIDS=true
+);
+ALTER TABLE cost2013.cost52su_poly OWNER TO postgres;
+COMMENT on TABLE cost2013.cost52su_poly is 'created on 1/6/14 with 9 categories for my value; --1 - un-populated--2 - cost less than the benchmark-served--3 - cost less than the benchmark-unserved--4 - cost between the benchmark-served--5 - cost between the benchmark-unserved--6 - cost greater than the benchmark-served--7 - cost greater then the benchmark-unserved--8 - rate of return--9 - water';
+
+-- Index: cost2013_cost52su_poly_gid
+-- DROP INDEX cost2013_cost52su_poly_gid;
+CREATE INDEX cost2013_cost52su_poly_gid
+  ON cost2013.cost52su_poly
+  USING btree
+  (gid);
+-- Index: cost2013.cost2013_cost52su_poly_geom_gist
+-- DROP INDEX cost2013_cost52su_poly_geom_gist;
+CREATE INDEX cost2013_cost52su_poly_geom_gist
+  ON cost2013.cost52su_poly
+  USING gist
+  (geom);
+
+ 
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_01;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '01' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '01' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '01' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '01' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '01' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '01' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '01' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_02;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '02' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '02' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '02' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '02' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '02' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '02' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '02' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_04;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '04' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '04' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '04' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '04' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '04' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '04' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '04' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_05;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '05' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '05' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '05' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '05' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '05' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '05' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '05' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+  
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_06;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '06' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '06' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '06' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '06' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '06' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '06' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '06' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*********************************************
+
+--*********************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_08;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '08' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '08' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '08' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '08' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '08' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '08' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '08' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_09;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '09' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '09' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '09' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '09' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '09' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '09' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '09' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*********************************************
+
+--*********************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_10;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '10' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '10' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '10' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '10' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '10' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '10' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '10' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*********************************************
+
+--*********************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_11;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '11' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '11' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '11' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '11' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '11' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '11' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '11' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_12;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '12' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '12' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '12' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '12' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '12' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '12' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '12' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_13;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '13' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '13' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '13' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '13' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '13' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '13' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '13' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_15;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '15' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '15' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '15' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '15' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '15' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '15' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '15' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_16;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '16' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '16' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '16' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '16' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '16' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '16' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '16' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_17;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '17' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '17' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '17' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '17' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '17' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '17' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '17' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_18;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '18' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '18' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '18' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '18' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '18' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '18' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '18' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_19;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '19' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '19' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '19' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '19' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '19' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '19' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '19' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_20;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '20' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '20' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '20' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '20' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '20' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '20' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '20' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_21;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '21' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '21' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '21' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '21' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '21' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '21' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '21' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_22;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '22' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '22' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '22' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '22' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '22' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '22' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '22' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_23;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '23' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '23' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '23' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '23' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '23' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '23' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '23' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_24;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '24' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '24' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '24' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '24' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '24' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '24' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '24' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_25;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '25' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '25' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '25' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '25' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '25' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '25' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '25' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_26;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '26' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '26' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '26' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '26' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '26' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '26' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '26' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_27;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '27' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '27' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '27' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '27' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '27' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '27' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '27' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_28;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '28' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '28' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '28' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '28' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '28' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '28' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '28' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_29;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '29' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '29' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '29' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '29' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '29' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '29' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '29' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_30;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '30' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '30' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '30' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '30' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '30' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '30' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '30' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_31;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '31' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '31' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '31' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '31' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '31' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '31' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '31' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_32;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '32' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '32' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '32' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '32' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '32' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '32' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '32' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_33;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '33' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '33' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '33' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '33' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '33' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '33' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '33' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_34;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '34' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '34' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '34' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '34' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '34' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '34' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '34' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_35;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '35' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '35' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '35' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '35' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '35' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '35' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '35' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_36;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '36' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '36' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '36' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '36' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '36' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '36' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '36' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_37;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '37' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '37' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '37' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '37' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '37' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '37' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '37' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_38;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '38' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '38' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '38' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '38' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '38' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '38' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '38' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_39;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '39' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '39' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '39' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '39' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '39' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '39' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '39' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_40;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '40' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '40' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '40' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '40' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '40' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '40' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '40' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_41;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '41' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '41' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '41' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '41' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '41' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '41' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '41' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_42;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '42' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '42' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '42' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '42' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '42' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '42' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '42' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_44;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '44' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '44' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '44' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '44' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '44' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '44' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '44' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_45;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '45' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '45' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '45' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '45' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '45' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '45' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '45' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_46;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '46' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '46' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '46' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '46' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '46' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '46' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '46' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_47;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '47' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '47' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '47' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '47' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '47' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '47' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '47' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_48;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '48' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '48' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '48' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '48' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '48' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '48' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '48' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_49;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '49' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '49' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '49' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '49' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '49' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '49' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '49' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_50;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '50' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '50' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '50' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '50' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '50' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '50' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '50' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_51;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '51' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '51' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '51' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '51' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '51' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '51' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '51' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_53;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '53' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '53' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '53' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '53' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '53' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '53' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '53' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_54;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '54' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '54' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '54' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '54' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '54' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '54' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '54' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_55;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '55' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '55' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '55' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '55' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '55' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '55' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '55' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_56;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '56' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '56' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '56' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '56' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '56' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '56' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '56' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_60;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '60' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '60' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '60' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '60' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '60' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '60' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '60' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_66;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '66' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '66' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '66' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '66' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '66' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '66' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '66' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_69;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '69' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '69' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '69' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '69' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '69' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '69' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '69' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_72;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '72' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '72' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '72' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '72' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '72' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '72' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '72' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
+
+--*******************************************
+drop table if exists cost2013.working;
+create table cost2013.working as
+  select * from census2010.block_78;
+alter table cost2013.working
+  add column myvalue numeric;
+update cost2013.working
+  set myvalue = '0';
+update cost2013.working
+  set myvalue = '2'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '78' and
+    cbcostcat = 'LT' and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '3'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '78' and
+	cbcostcat = 'LT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '4'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '78' and
+    cbcostcat = 'BTW'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '5'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '78' and
+	cbcostcat = 'BTW'and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '6'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+	substr(cb,1,2) = '78' and
+	cbcostcat = 'GT'and
+	bbserved = 'S';
+update cost2013.working
+  set myvalue = '7'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '78' and
+    cbcostcat = 'GT' and
+	bbserved = 'U';
+update cost2013.working
+  set myvalue = '8'
+  from cost2013.cost52
+  where working.geoid10=cost52.cb and
+    substr(cb,1,2) = '78' and
+    cbcostcat = 'ROR';
+update cost2013.working
+  set myvalue = '1'
+  where myvalue = '0';
+update cost2013.working
+  set myvalue = '9'
+  where awater10 > aland10;
+--dissolve into
+insert into cost2013.cost52su_poly
+  select st_simplify(st_union(st_transform(geom, 900913)),5) as geom,
+    statefp10 as state_fips, myvalue
+  from cost2013.working
+  group by myvalue, state_fips;
+--*******************************************
