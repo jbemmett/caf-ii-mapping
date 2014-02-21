@@ -1,0 +1,102 @@
+<!--  $48 Legend --> 
+<!--             -->
+<!--             -->
+<!--             -->
+<!--             -->
+
+<head>
+
+<style>
+body {
+		font-family: Arial, Helvetica, sans-serif;	
+	}
+
+.map-legends, .map-tooltip {
+  max-width: none;
+ }
+  
+.wax-legend {
+  width: 430px;
+}
+
+.col
+{
+    float: left;
+    width: 25%;
+}
+.row{
+    border: 0px solid green;
+    overflow: hidden;  /* "overflow: auto;" works just as well instead */
+    width:100%;        /* Helps older versions of IE */
+    white-space: nowrap;
+}
+</style>
+</head>
+
+<body>
+<div class="wax-legend">
+    
+<center>
+  <strong>Connect America Model CAM</strong>
+</center>
+
+<div class="row">
+  <div class="col">CAF-II Eligible</div>
+  <div class="col"> </div>  
+  <div class="col"><center><span style='color:#79b24a'>▉</span> </center> </div>
+ <div class="col"></div>
+</div>
+
+<hr>
+
+<div class="row">
+  <div class="col"> </div> 
+    <div class="col"> </div> 
+  <div class="col"><center>Not Served</center></div>
+  <div class="col"><center>Served</center></div>
+</div>
+    
+<div class="row">
+  <div class="col"> </div> 
+    <div class="col"> </div> 
+  <div class="col"><center>by Competitor</center></div>
+  <div class="col"><center>by Competitor</center></div>
+</div>
+    
+<div class="row">
+  <div class="col">> $48 and < $170.815 per location</div>
+  <div class="col"> </div>  
+  <div class="col"><center><span style='color:#79b24a'>▉</span></center> </div>
+  <div class="col"><center><span style='color:#cee8ba'>▉</span></center>
+  </div>
+</div>
+    
+<div class="row">
+  <div class="col">≤ $48 per location</div>
+    <div class="col"> </div> 
+  <div class="col"><center><span style='color:#557997'>▉</span></center></div>
+  <div class="col"><center><span style='color:#c3dbec'>▉</span></center></div>
+</div>
+    
+<div class="row">
+  <div class="col">≥ $170.815 per location</div>
+    <div class="col"> </div> 
+  <div class="col"><center><span style='color:#f4a776'>▉</span></center></div>
+  <div class="col"><center><span style='color:#fae2d5'>▉</span></center></div>
+</div>
+    
+<hr>
+    
+<div class="row">
+  <div class="col">Rate of Return</div>
+    <div class="col"> </div> 
+  <div class="col"></div>
+  <div class="col"><center><span style='color:#dddac9'>▉</span></center> </div>
+  <div class="col"></div>
+</div>
+
+</div>
+
+</body>
+</html>
+
